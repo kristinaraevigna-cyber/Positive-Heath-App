@@ -14,7 +14,7 @@ type Completion = {
   interventions: {
     name: string
     category: string
-  }
+  } | null
 }
 
 type Streak = {
