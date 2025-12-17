@@ -5,34 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 
-type Completion = {
-  id: string
-  intervention_id: string
-  mood_before: number
-  mood_after: number
-  completed_at: string
-  interventions: {
-    name: string
-    category: string
-  } | null
-}
-
-type Streak = {
-  current_streak: number
-  longest_streak: number
-  total_interventions_completed: number
-  last_activity_date: string
-}
-
-type JournalEntry = {
-  id: string
-  entry_type: string
-  created_at: string
-}
-
 export default function ProgressPage() {
-  const [streak, setStreak] = useState<Streak | null>(null)
-  const [completions, setCompletions] = useState<Completion[]>([])
+  const [streak, setStreak] = useState<any>(null)
+  const [completions, setCompletions] = useState<any[]>([])
   const [journalCount, setJournalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [avgMoodChange, setAvgMoodChange] = useState(0)
@@ -79,17 +54,18 @@ export default function ProgressPage() {
       .order('completed_at', { ascending: false })
       .limit(50)
 
-    setCompletions(completionsData || [])
+    const completionsList = completionsData || []
+    setCompletions(completionsList)
 
     // Calculate average mood change
-    if (completionsData && completionsData.length > 0) {
-      const totalChange = completionsData.reduce((sum, c) => {
+    if (completionsList.length > 0) {
+      const totalChange = completionsList.reduce((sum: number, c: any) => {
         if (c.mood_before && c.mood_after) {
           return sum + (c.mood_after - c.mood_before)
         }
         return sum
       }, 0)
-      const completionsWithMood = completionsData.filter(c => c.mood_before && c.mood_after).length
+      const completionsWithMood = completionsList.filter((c: any) => c.mood_before && c.mood_after).length
       if (completionsWithMood > 0) {
         setAvgMoodChange(Number((totalChange / completionsWithMood).toFixed(1)))
       }
@@ -105,7 +81,7 @@ export default function ProgressPage() {
       last7Days[key] = 0
     }
 
-    completionsData?.forEach(c => {
+    completionsList.forEach((c: any) => {
       const date = c.completed_at.split('T')[0]
       if (last7Days.hasOwnProperty(date)) {
         last7Days[date]++
@@ -316,7 +292,7 @@ export default function ProgressPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {completions.slice(0, 10).map((completion) => {
+              {completions.slice(0, 10).map((completion: any) => {
                 const moodChange = completion.mood_after - completion.mood_before
                 return (
                   <div key={completion.id} className="flex items-center gap-4 p-3 bg-[#f8f6f3] rounded-xl">
