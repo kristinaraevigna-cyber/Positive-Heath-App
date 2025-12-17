@@ -1,0 +1,272 @@
+@import "tailwindcss";
+
+/* =====================================================
+   POSITIVE HEALTH COACH - GLOBAL STYLES
+   Heart Health & Natural Tones
+   ===================================================== */
+
+:root {
+  /* Primary - Warm Coral/Rose (Heart Health) */
+  --color-primary-50: #fef2f2;
+  --color-primary-100: #fee2e2;
+  --color-primary-200: #fecaca;
+  --color-primary-300: #fca5a5;
+  --color-primary-400: #f87171;
+  --color-primary-500: #ef4444;
+  --color-primary-600: #dc2626;
+  --color-primary-700: #b91c1c;
+  --color-primary-800: #991b1b;
+  --color-primary-900: #7f1d1d;
+
+  /* Secondary - Sage Green (Natural/Calming) */
+  --color-sage-50: #f6f7f6;
+  --color-sage-100: #e3e7e3;
+  --color-sage-200: #c7d0c7;
+  --color-sage-300: #a3b2a3;
+  --color-sage-400: #7d917d;
+  --color-sage-500: #5f7360;
+  --color-sage-600: #4a5b4b;
+  --color-sage-700: #3d4a3e;
+  --color-sage-800: #333d34;
+  --color-sage-900: #2c332d;
+
+  /* Accent - Warm Sand/Earth */
+  --color-sand-50: #fdfcfb;
+  --color-sand-100: #f5f0eb;
+  --color-sand-200: #e8ddd3;
+  --color-sand-300: #d4c4b5;
+  --color-sand-400: #bba48f;
+  --color-sand-500: #a68b72;
+  --color-sand-600: #937660;
+  --color-sand-700: #7a6150;
+  --color-sand-800: #655145;
+  --color-sand-900: #54443b;
+
+  /* Warm Coral (softer primary alternative) */
+  --color-coral-50: #fff5f5;
+  --color-coral-100: #ffe0e0;
+  --color-coral-200: #ffbdbd;
+  --color-coral-300: #ff9494;
+  --color-coral-400: #ff6b6b;
+  --color-coral-500: #ee5a5a;
+  --color-coral-600: #d94848;
+  --color-coral-700: #b73a3a;
+  --color-coral-800: #973333;
+  --color-coral-900: #7d2e2e;
+
+  /* Backgrounds */
+  --background: #ffffff;
+  --background-soft: #faf9f7;
+  --background-warm: #f8f6f3;
+  --foreground: #2d2d2d;
+  --foreground-muted: #6b6b6b;
+
+  /* Fonts */
+  --font-body: 'Source Sans 3', system-ui, sans-serif;
+  --font-heading: 'DM Serif Display', Georgia, serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-heading);
+}
+
+/* Base Styles */
+body {
+  background: var(--background-warm);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--foreground);
+}
+
+/* Utility Classes */
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+/* Primary Button Style - Coral */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-coral-500), var(--color-coral-600));
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px -3px rgba(238, 90, 90, 0.4);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-coral-600), var(--color-coral-700));
+  box-shadow: 0 6px 20px -3px rgba(238, 90, 90, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Secondary Button Style */
+.btn-secondary {
+  background: white;
+  color: var(--color-sage-700);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: 2px solid var(--color-sage-200);
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--color-sage-50);
+  border-color: var(--color-sage-400);
+}
+
+/* Card Styles */
+.card {
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #e8e4df;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: var(--color-coral-200);
+}
+
+.card-elevated {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Gradient Backgrounds */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--color-coral-500), var(--color-coral-600));
+}
+
+.bg-gradient-hero {
+  background: linear-gradient(180deg, var(--background-warm) 0%, white 100%);
+}
+
+.bg-gradient-soft {
+  background: linear-gradient(180deg, var(--color-coral-50) 0%, white 100%);
+}
+
+/* Category Colors - Natural Palette */
+.category-calming { 
+  --category-color: var(--color-sage-500);
+  --category-bg: var(--color-sage-50);
+}
+
+.category-energising { 
+  --category-color: #e07c4a;
+  --category-bg: #fef6f2;
+}
+
+.category-coping { 
+  --category-color: #8b7355;
+  --category-bg: var(--color-sand-50);
+}
+
+.category-feeling-good { 
+  --category-color: var(--color-coral-500);
+  --category-bg: var(--color-coral-50);
+}
+
+.category-meaning-making { 
+  --category-color: #6b5b7a;
+  --category-bg: #f7f5f9;
+}
+
+.category-relationship { 
+  --category-color: #c06c84;
+  --category-bg: #fdf5f7;
+}
+
+.category-prospecting { 
+  --category-color: var(--color-sage-600);
+  --category-bg: var(--color-sage-50);
+}
+
+/* Input Styles */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+  border: 1.5px solid #e8e4df;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
+  width: 100%;
+  background: white;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-coral-400);
+  box-shadow: 0 0 0 3px rgba(238, 90, 90, 0.1);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f0eb;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4c4b5;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bba48f;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+/* Heart Icon Pulse */
+.heart-pulse {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
