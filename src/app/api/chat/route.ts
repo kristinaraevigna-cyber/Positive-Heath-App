@@ -247,8 +247,8 @@ export async function POST(req: NextRequest) {
           .eq('user_id', userId)
           .single()
 
-        if (strengthsData?.top_strengths?.length > 0) {
-          const strengthNames = strengthsData.top_strengths
+       if (strengthsData && strengthsData.top_strengths && strengthsData.top_strengths.length > 0) {
+  const strengthNames = strengthsData.top_strengths
             .map((id: string) => VIA_STRENGTHS_MAP[id])
             .filter(Boolean)
           
