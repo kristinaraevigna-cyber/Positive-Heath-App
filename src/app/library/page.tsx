@@ -65,7 +65,6 @@ export default function LibraryPage() {
       return
     }
 
-    // Load resources
     const { data: resourcesData } = await supabase
       .from('resources')
       .select('*')
@@ -74,14 +73,13 @@ export default function LibraryPage() {
 
     setResources(resourcesData || [])
 
-    // Load saved resources
     const { data: savedData } = await supabase
       .from('user_saved_resources')
       .select('resource_id')
       .eq('user_id', user.id)
 
     if (savedData) {
-      setSavedIds(new Set(savedData.map(s => s.resource_id)))
+      setSavedIds(new Set(savedData.map((s: any) => s.resource_id)))
     }
 
     setLoading(false)
@@ -135,32 +133,6 @@ export default function LibraryPage() {
     }
   }
 
-  const getTypeIcon = (type: string) => {
-    switch(type) {
-      case 'video': return (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z" />
-        </svg>
-      )
-      case 'article': return (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-        </svg>
-      )
-      case 'book': return (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-        </svg>
-      )
-      default: return (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      )
-    }
-  }
-
   const getTypeColor = (type: string) => {
     switch(type) {
       case 'video': return 'bg-[#fee2e2] text-[#ee5a5a]'
@@ -176,6 +148,14 @@ export default function LibraryPage() {
       case 'intermediate': return 'bg-[#fef3eb] text-[#e07a3a]'
       case 'advanced': return 'bg-[#fce7f3] text-[#db2777]'
       default: return 'bg-[#f8f6f3] text-[#6b6b6b]'
+    }
+  }
+
+  const getButtonText = (type: string) => {
+    switch(type) {
+      case 'video': return 'Watch Video'
+      case 'book': return 'View Book'
+      default: return 'Read Article'
     }
   }
 
@@ -196,7 +176,6 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f6f3]">
-      {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-[#e8e4df] sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
           <Link href="/dashboard" className="p-2 hover:bg-[#f8f6f3] rounded-xl transition text-[#6b6b6b] hover:text-[#2d2d2d]">
@@ -218,7 +197,6 @@ export default function LibraryPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6">
-        {/* Search */}
         <div className="mb-6">
           <div className="relative">
             <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-[#6b6b6b]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -234,8 +212,7 @@ export default function LibraryPage() {
           </div>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
@@ -252,7 +229,6 @@ export default function LibraryPage() {
           ))}
         </div>
 
-        {/* Type Filter */}
         <div className="flex gap-2 mb-6">
           {TYPES.map((type) => (
             <button
@@ -269,34 +245,6 @@ export default function LibraryPage() {
           ))}
         </div>
 
-        {/* Featured Section */}
-        {selectedCategory === 'all' && selectedType === 'all' && !searchQuery && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-[#2d2d2d] mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
-              Featured
-            </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {resources.filter(r => r.is_featured).slice(0, 3).map((resource) => (
-                <button
-                  key={resource.id}
-                  onClick={() => setSelectedResource(resource)}
-                  className="bg-gradient-to-br from-[#ee5a5a] to-[#d94848] p-6 rounded-2xl text-left text-white hover:shadow-xl transition-all group"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className={`w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center`}>
-                      {getTypeIcon(resource.type)}
-                    </div>
-                    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">{resource.duration}</span>
-                  </div>
-                  <h3 className="font-semibold mb-2 group-hover:underline">{resource.title}</h3>
-                  <p className="text-white/80 text-sm line-clamp-2">{resource.description}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Resources Grid */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
             {selectedCategory === 'all' ? 'All Resources' : CATEGORIES.find(c => c.id === selectedCategory)?.name}
@@ -324,7 +272,7 @@ export default function LibraryPage() {
             {filteredResources.map((resource) => (
               <div
                 key={resource.id}
-                className="bg-white rounded-2xl border border-[#e8e4df] overflow-hidden hover:shadow-lg transition-all group"
+                className="bg-white rounded-2xl border border-[#e8e4df] overflow-hidden hover:shadow-lg transition-all"
               >
                 <button
                   onClick={() => setSelectedResource(resource)}
@@ -332,21 +280,30 @@ export default function LibraryPage() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getTypeColor(resource.type)}`}>
-                      {getTypeIcon(resource.type)}
+                      {resource.type === 'video' && (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z" />
+                        </svg>
+                      )}
+                      {resource.type === 'article' && (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                        </svg>
+                      )}
+                      {resource.type === 'book' && (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                        </svg>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-1 rounded-full ${getDifficultyColor(resource.difficulty)}`}>
-                        {resource.difficulty}
-                      </span>
-                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${getDifficultyColor(resource.difficulty)}`}>
+                      {resource.difficulty}
+                    </span>
                   </div>
-                  <h3 className="font-semibold text-[#2d2d2d] mb-2 group-hover:text-[#ee5a5a] transition">
-                    {resource.title}
-                  </h3>
+                  <h3 className="font-semibold text-[#2d2d2d] mb-2">{resource.title}</h3>
                   <p className="text-[#6b6b6b] text-sm line-clamp-2 mb-3">{resource.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#6b6b6b]">{resource.source} · {resource.duration}</span>
-                  </div>
+                  <span className="text-xs text-[#6b6b6b]">{resource.source} · {resource.duration}</span>
                 </button>
                 <div className="px-5 pb-4 flex items-center justify-between border-t border-[#e8e4df] pt-3">
                   <div className="flex gap-1">
@@ -362,7 +319,13 @@ export default function LibraryPage() {
                       savedIds.has(resource.id) ? 'text-[#ee5a5a]' : 'text-[#6b6b6b] hover:text-[#ee5a5a]'
                     }`}
                   >
-                    <svg className="w-5 h-5" fill={savedIds.has(resource.id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <svg 
+                      className="w-5 h-5" 
+                      fill={savedIds.has(resource.id) ? 'currentColor' : 'none'} 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24" 
+                      strokeWidth={1.5}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
                     </svg>
                   </button>
@@ -373,11 +336,15 @@ export default function LibraryPage() {
         )}
       </main>
 
-      {/* Resource Modal */}
       {selectedResource && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedResource(null)}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            {/* Video Embed */}
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" 
+          onClick={() => setSelectedResource(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" 
+            onClick={(e) => e.stopPropagation()}
+          >
             {selectedResource.type === 'video' && selectedResource.video_embed_url && (
               <div className="aspect-video bg-black rounded-t-2xl overflow-hidden">
                 <iframe
@@ -392,7 +359,22 @@ export default function LibraryPage() {
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getTypeColor(selectedResource.type)}`}>
-                  {getTypeIcon(selectedResource.type)}
+                  {selectedResource.type === 'video' && (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z" />
+                    </svg>
+                  )}
+                  {selectedResource.type === 'article' && (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                  )}
+                  {selectedResource.type === 'book' && (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                  )}
                 </div>
                 <button
                   onClick={() => setSelectedResource(null)}
@@ -434,7 +416,7 @@ export default function LibraryPage() {
                   rel="noopener noreferrer"
                   className="flex-1 py-3 bg-gradient-to-r from-[#ee5a5a] to-[#d94848] text-white rounded-xl font-medium text-center hover:shadow-lg transition"
                 >
-                  {selectedResource.type === 'video' ? 'Watch on YouTube' : selectedResource.type === 'book' ? 'View on Amazon' : 'Read Article'}
+                  {getButtonText(selectedResource.type)}
                 </a>
                 <button
                   onClick={() => toggleSave(selectedResource.id)}
@@ -444,7 +426,13 @@ export default function LibraryPage() {
                       : 'border-[#e8e4df] text-[#6b6b6b] hover:border-[#d4c4b5]'
                   }`}
                 >
-                  <svg className="w-5 h-5" fill={savedIds.has(selectedResource.id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <svg 
+                    className="w-5 h-5" 
+                    fill={savedIds.has(selectedResource.id) ? 'currentColor' : 'none'} 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24" 
+                    strokeWidth={1.5}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
                   </svg>
                 </button>
