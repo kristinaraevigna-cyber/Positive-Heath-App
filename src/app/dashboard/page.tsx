@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [weeklyCompletions, setWeeklyCompletions] = useState(0)
   const [totalCompletions, setTotalCompletions] = useState(0)
   const [loading, setLoading] = useState(true)
-  
+
   const router = useRouter()
   const supabase = createClient()
 
@@ -23,12 +23,13 @@ export default function Dashboard() {
 
   const loadDashboard = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) {
       router.push('/study-info')
       return
     }
 
+    // Get participant ID
     const { data: consent } = await supabase
       .from('study_consent')
       .select('participant_id')
@@ -39,6 +40,7 @@ export default function Dashboard() {
       setParticipantId(consent.participant_id)
     }
 
+    // Load or create streak
     let { data: streakData } = await supabase
       .from('user_streaks')
       .select('*')
@@ -56,13 +58,14 @@ export default function Dashboard() {
         })
         .select()
         .single()
-      
+
       streakData = newStreak
     }
 
     setStreak(streakData)
     setTotalCompletions(streakData?.total_interventions_completed || 0)
 
+    // Load active goals
     const { data: goalsData } = await supabase
       .from('goals')
       .select('id, title, status, progress')
@@ -73,6 +76,7 @@ export default function Dashboard() {
 
     setActiveGoals(goalsData || [])
 
+    // Load recent journal entries
     const { data: journalData } = await supabase
       .from('journal_entries')
       .select('id, entry_type, content, created_at')
@@ -82,9 +86,10 @@ export default function Dashboard() {
 
     setRecentJournals(journalData || [])
 
+    // Weekly completions
     const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 7)
-    
+
     const { count } = await supabase
       .from('intervention_completions')
       .select('*', { count: 'exact', head: true })
@@ -168,6 +173,7 @@ export default function Dashboard() {
           <p className="text-[#6b6b6b]">How can I support your wellbeing today?</p>
         </div>
 
+        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-white p-5 rounded-2xl border border-[#e8e4df]">
             <div className="flex flex-col items-center text-center">
@@ -227,10 +233,11 @@ export default function Dashboard() {
           </Link>
         </div>
 
+        {/* Quick Actions */}
         <h2 className="text-lg font-semibold text-[#2d2d2d] mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
           Quick Actions
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Link href="/coach" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-[#fee2e2] to-[#fecaca] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
@@ -279,6 +286,18 @@ export default function Dashboard() {
             </div>
           </Link>
 
+          <Link href="/assessments" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <svg className="w-6 h-6 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
+                </svg>
+              </div>
+              <h3 className="font-medium text-[#2d2d2d] mb-1">Assessments</h3>
+              <p className="text-xs text-[#6b6b6b]">Wellbeing</p>
+            </div>
+          </Link>
+
           <Link href="/strengths" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-[#fef3eb] to-[#fde5d5] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
@@ -315,19 +334,10 @@ export default function Dashboard() {
             </div>
           </Link>
         </div>
-        <Link href="/assessments" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
-  <div className="flex flex-col items-center text-center">
-    <div className="w-12 h-12 bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-      <svg className="w-6 h-6 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
-      </svg>
-    </div>
-    <h3 className="font-medium text-[#2d2d2d] mb-1">Assessments</h3>
-    <p className="text-xs text-[#6b6b6b]">Wellbeing</p>
-  </div>
-</Link>
 
+        {/* Goals & Journal Side by Side */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Active Goals */}
           <div className="bg-white rounded-2xl border border-[#e8e4df] p-6 h-fit">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -340,7 +350,7 @@ export default function Dashboard() {
               </div>
               <Link href="/goals" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">View all</Link>
             </div>
-            
+
             {activeGoals.length === 0 ? (
               <div className="text-center py-8">
                 <div className="w-12 h-12 bg-[#f8f6f3] rounded-xl flex items-center justify-center mx-auto mb-3">
@@ -358,32 +368,31 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {activeGoals.map((goal) => {
-                  return (
-                    <div key={goal.id} className="flex items-center gap-3 p-3 bg-[#f8f6f3] rounded-xl">
-                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-4 h-4 text-[#a68b72]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[#2d2d2d] text-sm font-medium truncate">{goal.title}</p>
-                        {goal.progress > 0 && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="flex-1 bg-[#e8e4df] rounded-full h-1.5">
-                              <div className="bg-[#5f7360] h-1.5 rounded-full" style={{ width: `${goal.progress}%` }} />
-                            </div>
-                            <span className="text-xs text-[#6b6b6b]">{goal.progress}%</span>
-                          </div>
-                        )}
-                      </div>
+                {activeGoals.map((goal) => (
+                  <div key={goal.id} className="flex items-center gap-3 p-3 bg-[#f8f6f3] rounded-xl">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-[#a68b72]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                     </div>
-                  )
-                })}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[#2d2d2d] text-sm font-medium truncate">{goal.title}</p>
+                      {goal.progress > 0 && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex-1 bg-[#e8e4df] rounded-full h-1.5">
+                            <div className="bg-[#5f7360] h-1.5 rounded-full" style={{ width: `${goal.progress}%` }} />
+                          </div>
+                          <span className="text-xs text-[#6b6b6b]">{goal.progress}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
+          {/* Recent Journal */}
           <div className="bg-white rounded-2xl border border-[#e8e4df] p-6 h-fit">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -396,7 +405,7 @@ export default function Dashboard() {
               </div>
               <Link href="/journal" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">View all</Link>
             </div>
-            
+
             {recentJournals.length === 0 ? (
               <div className="text-center py-8">
                 <div className="w-12 h-12 bg-[#f8f6f3] rounded-xl flex items-center justify-center mx-auto mb-3">
@@ -414,22 +423,21 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {recentJournals.map((entry) => {
-                  return (
-                    <div key={entry.id} className="p-3 bg-[#f8f6f3] rounded-xl">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs bg-[#fce7f3] text-[#db2777] px-2 py-0.5 rounded-full capitalize">{entry.entry_type}</span>
-                        <span className="text-xs text-[#6b6b6b]">{new Date(entry.created_at).toLocaleDateString('en-IE', { month: 'short', day: 'numeric' })}</span>
-                      </div>
-                      <p className="text-[#2d2d2d] text-sm line-clamp-2">{entry.content}</p>
+                {recentJournals.map((entry) => (
+                  <div key={entry.id} className="p-3 bg-[#f8f6f3] rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs bg-[#fce7f3] text-[#db2777] px-2 py-0.5 rounded-full capitalize">{entry.entry_type}</span>
+                      <span className="text-xs text-[#6b6b6b]">{new Date(entry.created_at).toLocaleDateString('en-IE', { month: 'short', day: 'numeric' })}</span>
                     </div>
-                  )
-                })}
+                    <p className="text-[#2d2d2d] text-sm line-clamp-2">{entry.content}</p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
 
+        {/* Coaching CTA */}
         <div className="bg-gradient-to-br from-[#ee5a5a] to-[#d94848] rounded-2xl p-6 text-center text-white mb-8">
           <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>Ready for a coaching session?</h2>
           <p className="text-white/80 mb-4 text-sm">Quick check-in or deep strengths exploration</p>
@@ -448,6 +456,3 @@ export default function Dashboard() {
     </div>
   )
 }
-
-
-
