@@ -168,7 +168,6 @@ export default function Dashboard() {
           <p className="text-[#6b6b6b]">How can I support your wellbeing today?</p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-white p-5 rounded-2xl border border-[#e8e4df]">
             <div className="flex flex-col items-center text-center">
@@ -228,7 +227,6 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Quick Actions */}
         <h2 className="text-lg font-semibold text-[#2d2d2d] mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
           Quick Actions
         </h2>
@@ -318,9 +316,7 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Goals & Journal Side by Side */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Active Goals */}
           <div className="bg-white rounded-2xl border border-[#e8e4df] p-6 h-fit">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -329,13 +325,9 @@ export default function Dashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
                   </svg>
                 </div>
-                <h2 className="font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Active Goals
-                </h2>
+                <h2 className="font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>Active Goals</h2>
               </div>
-              <Link href="/goals" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
-                View all
-              </Link>
+              <Link href="/goals" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">View all</Link>
             </div>
             
             {activeGoals.length === 0 ? (
@@ -381,7 +373,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Recent Journal */}
           <div className="bg-white rounded-2xl border border-[#e8e4df] p-6 h-fit">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -390,13 +381,9 @@ export default function Dashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                   </svg>
                 </div>
-                <h2 className="font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Recent Journal
-                </h2>
+                <h2 className="font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>Recent Journal</h2>
               </div>
-              <Link href="/journal" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
-                View all
-              </Link>
+              <Link href="/journal" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">View all</Link>
             </div>
             
             {recentJournals.length === 0 ? (
@@ -420,12 +407,8 @@ export default function Dashboard() {
                   return (
                     <div key={entry.id} className="p-3 bg-[#f8f6f3] rounded-xl">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs bg-[#fce7f3] text-[#db2777] px-2 py-0.5 rounded-full capitalize">
-                          {entry.entry_type}
-                        </span>
-                        <span className="text-xs text-[#6b6b6b]">
-                          {new Date(entry.created_at).toLocaleDateString('en-IE', { month: 'short', day: 'numeric' })}
-                        </span>
+                        <span className="text-xs bg-[#fce7f3] text-[#db2777] px-2 py-0.5 rounded-full capitalize">{entry.entry_type}</span>
+                        <span className="text-xs text-[#6b6b6b]">{new Date(entry.created_at).toLocaleDateString('en-IE', { month: 'short', day: 'numeric' })}</span>
                       </div>
                       <p className="text-[#2d2d2d] text-sm line-clamp-2">{entry.content}</p>
                     </div>
@@ -436,14 +419,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Coaching CTA */}
         <div className="bg-gradient-to-br from-[#ee5a5a] to-[#d94848] rounded-2xl p-6 text-center text-white mb-8">
-          <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
-            Ready for a coaching session?
-          </h2>
-          <p className="text-white/80 mb-4 text-sm">
-            Quick check-in or deep strengths exploration
-          </p>
+          <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>Ready for a coaching session?</h2>
+          <p className="text-white/80 mb-4 text-sm">Quick check-in or deep strengths exploration</p>
           <Link href="/coach" className="inline-flex items-center gap-2 bg-white text-[#ee5a5a] px-6 py-3 rounded-xl font-medium hover:shadow-lg transition">
             Start Coaching
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -459,6 +437,6 @@ export default function Dashboard() {
     </div>
   )
 }
-```
+
 
 
