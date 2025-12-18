@@ -6,71 +6,120 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 
 export default function Dashboard() {
-  const [userName, setUserName] = useState('')
+  const [participantId, setParticipantId] = useState('')
   const [streak, setStreak] = useState<any>(null)
   const [activeGoals, setActiveGoals] = useState<any[]>([])
+  const [recentJournals, setRecentJournals] = useState<any[]>([])
   const [weeklyCompletions, setWeeklyCompletions] = useState(0)
+  const [totalCompletions, setTotalCompletions] = useState(0)
   const [loading, setLoading] = useState(true)
   
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    const loadDashboard = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
-
-      if (profile?.full_name) {
-        setUserName(profile.full_name.split(' ')[0])
-      }
-
-      const { data: streakData } = await supabase
-        .from('user_streaks')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      setStreak(streakData)
-
-      const { data: goalsData } = await supabase
-        .from('goals')
-        .select('id, title, status')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .limit(5)
-
-      setActiveGoals(goalsData || [])
-
-      const weekAgo = new Date()
-      weekAgo.setDate(weekAgo.getDate() - 7)
-      
-      const { count } = await supabase
-        .from('intervention_completions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('completed_at', weekAgo.toISOString())
-
-      setWeeklyCompletions(count || 0)
-
-      setLoading(false)
-    }
-
     loadDashboard()
   }, [])
 
+  const loadDashboard = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      router.push('/study-info')
+      return
+    }
+
+    // Get participant ID
+    const { data: consent } = await supabase
+      .from('study_consent')
+      .select('participant_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (consent) {
+      setParticipantId(consent.participant_id)
+    }
+
+    // Load or create streak
+    let { data: streakData } = await supabase
+      .from('user_streaks')
+      .select('*')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!streakData) {
+      // Create streak record if doesn't exist
+      const { data: newStreak } = await supabase
+        .from('user_streaks')
+        .insert({
+          user_id: user.id,
+          current_streak: 0,
+          longest_streak: 0,
+          total_interventions_completed: 0,
+        })
+        .select()
+        .single()
+      
+      streakData = newStreak
+    }
+
+    setStreak(streakData)
+    setTotalCompletions(streakData?.total_interventions_completed || 0)
+
+    // Load active goals
+    const { data: goalsData } = await supabase
+      .from('goals')
+      .select('id, title, status, progress')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(5)
+
+    setActiveGoals(goalsData || [])
+
+    // Load recent journal entries (try both table names)
+    let journalData = null
+    const { data: journals1 } = await supabase
+      .from('journal_entries')
+      .select('id, entry_type, content, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(3)
+    
+    if (journals1) {
+      journalData = journals1
+    } else {
+      // Try diary_entry if journal_entries doesn't exist
+      const { data: journals2 } = await supabase
+        .from('diary_entry')
+        .select('id, entry_type, content, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3)
+      journalData = journals2
+    }
+
+    setRecentJournals(journalData || [])
+
+    // Weekly completions
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    
+    const { count } = await supabase
+      .from('intervention_completions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('completed_at', weekAgo.toISOString())
+
+    setWeeklyCompletions(count || 0)
+
+    setLoading(false)
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/login')
+    localStorage.removeItem('participant_id')
+    router.push('/study-info')
   }
 
   const getGreeting = () => {
@@ -105,9 +154,14 @@ export default function Dashboard() {
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
               </svg>
             </div>
-            <span className="text-xl font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
-              Positive Health Coach
-            </span>
+            <div>
+              <span className="text-xl font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
+                Positive Health Coach
+              </span>
+              {participantId && (
+                <p className="text-xs text-[#6b6b6b]">Participant: {participantId}</p>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -135,11 +189,12 @@ export default function Dashboard() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl text-[#2d2d2d] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-            {getGreeting()}{userName ? `, ${userName}` : ''}
+            {getGreeting()}
           </h1>
           <p className="text-[#6b6b6b]">How can I support your wellbeing today?</p>
         </div>
 
+        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-white p-5 rounded-2xl border border-[#e8e4df]">
             <div className="flex flex-col items-center text-center">
@@ -160,7 +215,7 @@ export default function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-2xl font-bold text-[#2d2d2d]">{streak?.total_interventions_completed || 0}</p>
+              <p className="text-2xl font-bold text-[#2d2d2d]">{totalCompletions}</p>
               <p className="text-sm text-[#6b6b6b]">Completed</p>
             </div>
           </div>
@@ -202,14 +257,12 @@ export default function Dashboard() {
           </Link>
         </div>
 
+        {/* Quick Actions */}
         <h2 className="text-lg font-semibold text-[#2d2d2d] mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
           Quick Actions
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-          <Link
-            href="/coach"
-            className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group"
-          >
+          <Link href="/coach" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-[#fee2e2] to-[#fecaca] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-[#ee5a5a]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -221,10 +274,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link
-            href="/interventions"
-            className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group"
-          >
+          <Link href="/interventions" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-[#e3e7e3] to-[#c7d0c7] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-[#5f7360]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -236,10 +286,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link
-            href="/goals"
-            className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group"
-          >
+          <Link href="/goals" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-[#f5f0eb] to-[#e8ddd3] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-[#a68b72]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -251,10 +298,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link
-            href="/journal"
-            className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group"
-          >
+          <Link href="/journal" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-[#fce7f3] to-[#fbcfe8] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-[#db2777]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -266,10 +310,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link
-            href="/strengths"
-            className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group"
-          >
+          <Link href="/strengths" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-[#fef3eb] to-[#fde5d5] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-[#e07a3a]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -281,10 +322,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link
-            href="/progress"
-            className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group"
-          >
+          <Link href="/progress" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-[#e0f2fe] to-[#bae6fd] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-[#0284c7]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -296,10 +334,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link
-            href="/library"
-            className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group"
-          >
+          <Link href="/library" className="bg-white p-5 rounded-2xl border border-[#e8e4df] hover:shadow-lg hover:border-[#d4c4b5] transition-all group">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-[#f5f3ff] to-[#ede9fe] rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-[#7c3aed]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -312,16 +347,25 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {activeGoals.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#e8e4df] p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
-                Active Goals
-              </h2>
-              <Link href="/goals" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
-                View all
+        {/* Active Goals Section */}
+        <div className="bg-white rounded-2xl border border-[#e8e4df] p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
+              Active Goals
+            </h2>
+            <Link href="/goals" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
+              View all
+            </Link>
+          </div>
+          
+          {activeGoals.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-[#6b6b6b] mb-3">No goals yet</p>
+              <Link href="/goals" className="text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
+                Create your first goal →
               </Link>
             </div>
+          ) : (
             <div className="space-y-3">
               {activeGoals.map((goal) => {
                 return (
@@ -331,14 +375,67 @@ export default function Dashboard() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
                       </svg>
                     </div>
-                    <span className="text-[#2d2d2d] text-sm flex-1 truncate">{goal.title}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[#2d2d2d] text-sm truncate">{goal.title}</p>
+                      {goal.progress > 0 && (
+                        <div className="w-full bg-[#e8e4df] rounded-full h-1.5 mt-1">
+                          <div 
+                            className="bg-[#5f7360] h-1.5 rounded-full" 
+                            style={{ width: `${goal.progress}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {goal.progress > 0 && (
+                      <span className="text-xs text-[#6b6b6b]">{goal.progress}%</span>
+                    )}
                   </div>
                 )
               })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
+        {/* Recent Journal Section */}
+        <div className="bg-white rounded-2xl border border-[#e8e4df] p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
+              Recent Journal Entries
+            </h2>
+            <Link href="/journal" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
+              View all
+            </Link>
+          </div>
+          
+          {recentJournals.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-[#6b6b6b] mb-3">No journal entries yet</p>
+              <Link href="/journal" className="text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
+                Write your first entry →
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentJournals.map((entry) => {
+                return (
+                  <div key={entry.id} className="p-3 bg-[#f8f6f3] rounded-xl">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs bg-[#fce7f3] text-[#db2777] px-2 py-0.5 rounded-full">
+                        {entry.entry_type}
+                      </span>
+                      <span className="text-xs text-[#6b6b6b]">
+                        {new Date(entry.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-[#2d2d2d] text-sm line-clamp-2">{entry.content}</p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Coaching CTA */}
         <div className="bg-gradient-to-br from-[#ee5a5a] to-[#d94848] rounded-2xl p-6 text-center text-white mb-8">
           <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
             Ready for a coaching session?
@@ -358,7 +455,7 @@ export default function Dashboard() {
         </div>
 
         <div className="text-center text-sm text-[#6b6b6b]">
-          <p>Based on lifestyle medicine research</p>
+          <p>Based on positive psychology research</p>
         </div>
       </main>
     </div>
