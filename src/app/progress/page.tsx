@@ -20,17 +20,24 @@ interface Completion {
   mood_before: number | null
   mood_after: number | null
   notes: string | null
-  intervention?: {
-    title: string
-    category: string
-  }
+}
+
+interface CoachingSession {
+  id: string
+  session_type: string
+  created_at: string
 }
 
 export default function ProgressPage() {
   const [streak, setStreak] = useState<Streak | null>(null)
   const [completions, setCompletions] = useState<Completion[]>([])
+  const [coachingSessions, setCoachingSessions] = useState<CoachingSession[]>([])
+  const [totalCoachingSessions, setTotalCoachingSessions] = useState(0)
   const [weeklyCount, setWeeklyCount] = useState(0)
   const [monthlyCount, setMonthlyCount] = useState(0)
+  const [totalGoals, setTotalGoals] = useState(0)
+  const [completedGoals, setCompletedGoals] = useState(0)
+  const [journalEntries, setJournalEntries] = useState(0)
   const [loading, setLoading] = useState(true)
 
   const router = useRouter()
@@ -58,7 +65,6 @@ export default function ProgressPage() {
     if (streakData) {
       setStreak(streakData)
     } else {
-      // Create streak record if doesn't exist
       const { data: newStreak } = await supabase
         .from('user_streaks')
         .insert({
@@ -77,21 +83,25 @@ export default function ProgressPage() {
     // Load recent completions
     const { data: completionsData } = await supabase
       .from('intervention_completions')
-      .select(`
-        id,
-        intervention_id,
-        completed_at,
-        mood_before,
-        mood_after,
-        notes
-      `)
+      .select('*')
       .eq('user_id', user.id)
       .order('completed_at', { ascending: false })
-      .limit(20)
+      .limit(10)
 
     setCompletions(completionsData || [])
 
-    // Calculate weekly count
+    // Load coaching sessions
+    const { data: sessionsData, count: sessionsCount } = await supabase
+      .from('coaching_sessions')
+      .select('*', { count: 'exact' })
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5)
+
+    setCoachingSessions(sessionsData || [])
+    setTotalCoachingSessions(sessionsCount || 0)
+
+    // Calculate weekly intervention count
     const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 7)
     
@@ -114,6 +124,30 @@ export default function ProgressPage() {
       .gte('completed_at', monthAgo.toISOString())
 
     setMonthlyCount(monthly || 0)
+
+    // Load goals stats
+    const { count: totalGoalsCount } = await supabase
+      .from('goals')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    setTotalGoals(totalGoalsCount || 0)
+
+    const { count: completedGoalsCount } = await supabase
+      .from('goals')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+
+    setCompletedGoals(completedGoalsCount || 0)
+
+    // Load journal entries count
+    const { count: journalCount } = await supabase
+      .from('journal_entries')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    setJournalEntries(journalCount || 0)
 
     setLoading(false)
   }
@@ -198,7 +232,10 @@ export default function ProgressPage() {
           )}
         </div>
 
-        {/* Stats Grid */}
+        {/* Activity Stats */}
+        <h2 className="text-lg font-semibold text-[#2d2d2d] mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
+          Activity Summary
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-2xl border border-[#e8e4df] p-5 text-center">
             <div className="w-10 h-10 bg-gradient-to-br from-[#e3e7e3] to-[#c7d0c7] rounded-xl flex items-center justify-center mx-auto mb-3">
@@ -207,45 +244,106 @@ export default function ProgressPage() {
               </svg>
             </div>
             <p className="text-2xl font-bold text-[#2d2d2d]">{streak?.total_interventions_completed || 0}</p>
-            <p className="text-xs text-[#6b6b6b]">Total Completed</p>
+            <p className="text-xs text-[#6b6b6b]">Interventions</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-[#e8e4df] p-5 text-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#f5f3ff] to-[#ede9fe] rounded-xl flex items-center justify-center mx-auto mb-3">
-              <svg className="w-5 h-5 text-[#7c3aed]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            <div className="w-10 h-10 bg-gradient-to-br from-[#fee2e2] to-[#fecaca] rounded-xl flex items-center justify-center mx-auto mb-3">
+              <svg className="w-5 h-5 text-[#ee5a5a]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
               </svg>
             </div>
-            <p className="text-2xl font-bold text-[#2d2d2d]">{weeklyCount}</p>
-            <p className="text-xs text-[#6b6b6b]">This Week</p>
+            <p className="text-2xl font-bold text-[#2d2d2d]">{totalCoachingSessions}</p>
+            <p className="text-xs text-[#6b6b6b]">Coaching Sessions</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-[#e8e4df] p-5 text-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#fef3eb] to-[#fde5d5] rounded-xl flex items-center justify-center mx-auto mb-3">
-              <svg className="w-5 h-5 text-[#e07a3a]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            <div className="w-10 h-10 bg-gradient-to-br from-[#fce7f3] to-[#fbcfe8] rounded-xl flex items-center justify-center mx-auto mb-3">
+              <svg className="w-5 h-5 text-[#db2777]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
               </svg>
             </div>
-            <p className="text-2xl font-bold text-[#2d2d2d]">{monthlyCount}</p>
-            <p className="text-xs text-[#6b6b6b]">This Month</p>
+            <p className="text-2xl font-bold text-[#2d2d2d]">{journalEntries}</p>
+            <p className="text-xs text-[#6b6b6b]">Journal Entries</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-[#e8e4df] p-5 text-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#e0f2fe] to-[#bae6fd] rounded-xl flex items-center justify-center mx-auto mb-3">
-              <svg className="w-5 h-5 text-[#0284c7]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="w-10 h-10 bg-gradient-to-br from-[#f5f0eb] to-[#e8ddd3] rounded-xl flex items-center justify-center mx-auto mb-3">
+              <svg className="w-5 h-5 text-[#a68b72]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
               </svg>
             </div>
-            <p className="text-2xl font-bold text-[#2d2d2d]">{streak?.total_minutes_practiced || 0}</p>
-            <p className="text-xs text-[#6b6b6b]">Minutes Practiced</p>
+            <p className="text-2xl font-bold text-[#2d2d2d]">{completedGoals}/{totalGoals}</p>
+            <p className="text-xs text-[#6b6b6b]">Goals Completed</p>
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-2xl border border-[#e8e4df] p-6">
-          <h2 className="font-semibold text-[#2d2d2d] mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
-            Recent Activity
-          </h2>
+        {/* Time-based Stats */}
+        <h2 className="text-lg font-semibold text-[#2d2d2d] mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
+          Intervention Progress
+        </h2>
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-2xl border border-[#e8e4df] p-5 text-center">
+            <p className="text-3xl font-bold text-[#2d2d2d]">{weeklyCount}</p>
+            <p className="text-sm text-[#6b6b6b]">This Week</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#e8e4df] p-5 text-center">
+            <p className="text-3xl font-bold text-[#2d2d2d]">{monthlyCount}</p>
+            <p className="text-sm text-[#6b6b6b]">This Month</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#e8e4df] p-5 text-center">
+            <p className="text-3xl font-bold text-[#2d2d2d]">{streak?.total_minutes_practiced || 0}</p>
+            <p className="text-sm text-[#6b6b6b]">Minutes Total</p>
+          </div>
+        </div>
+
+        {/* Recent Coaching Sessions */}
+        {coachingSessions.length > 0 && (
+          <div className="bg-white rounded-2xl border border-[#e8e4df] p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
+                Recent Coaching Sessions
+              </h2>
+              <Link href="/coach" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
+                Start new
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {coachingSessions.map((session) => {
+                return (
+                  <div key={session.id} className="flex items-center gap-4 p-3 bg-[#f8f6f3] rounded-xl">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#fee2e2] to-[#fecaca] rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-[#ee5a5a]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[#2d2d2d] font-medium text-sm capitalize">
+                        {session.session_type || 'Coaching'} Session
+                      </p>
+                    </div>
+                    <span className="text-xs text-[#6b6b6b] flex-shrink-0">
+                      {formatDate(session.created_at)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Intervention Activity */}
+        <div className="bg-white rounded-2xl border border-[#e8e4df] p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-[#2d2d2d]" style={{ fontFamily: 'var(--font-heading)' }}>
+              Recent Interventions
+            </h2>
+            <Link href="/interventions" className="text-sm text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
+              View all
+            </Link>
+          </div>
 
           {completions.length === 0 ? (
             <div className="text-center py-8">
@@ -254,7 +352,7 @@ export default function ProgressPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-[#6b6b6b] mb-3">No activities completed yet</p>
+              <p className="text-[#6b6b6b] mb-3">No interventions completed yet</p>
               <Link href="/interventions" className="inline-flex items-center gap-1 text-[#ee5a5a] font-medium hover:text-[#d94848] transition">
                 Start your first intervention
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -292,23 +390,29 @@ export default function ProgressPage() {
           )}
         </div>
 
-        {/* Start Activity CTA */}
-        <div className="mt-6 bg-gradient-to-br from-[#5f7360] to-[#4a5a4b] rounded-2xl p-6 text-center text-white">
+        {/* Keep Going CTA */}
+        <div className="bg-gradient-to-br from-[#5f7360] to-[#4a5a4b] rounded-2xl p-6 text-center text-white">
           <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
-            Keep Your Streak Going!
+            Keep Building Your Practice!
           </h2>
           <p className="text-white/80 mb-4 text-sm">
-            Complete an intervention today to maintain your progress
+            Every session brings you closer to lasting wellbeing
           </p>
-          <Link href="/interventions" className="inline-flex items-center gap-2 bg-white text-[#5f7360] px-6 py-3 rounded-xl font-medium hover:shadow-lg transition">
-            Browse Interventions
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-          </Link>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href="/interventions" className="inline-flex items-center gap-2 bg-white text-[#5f7360] px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition">
+              Interventions
+            </Link>
+            <Link href="/coach" className="inline-flex items-center gap-2 bg-white/20 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-white/30 transition">
+              Coach
+            </Link>
+            <Link href="/journal" className="inline-flex items-center gap-2 bg-white/20 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-white/30 transition">
+              Journal
+            </Link>
+          </div>
         </div>
       </main>
     </div>
   )
 }
+
 
