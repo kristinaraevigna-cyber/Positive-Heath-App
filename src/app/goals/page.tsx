@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
@@ -41,11 +41,7 @@ export default function GoalsPage() {
     { id: 'other', name: 'Other', color: 'bg-[#f8f6f3] text-[#6b6b6b]' },
   ]
 
-  useEffect(() => {
-    loadGoals()
-  }, [])
-
-  const loadGoals = async () => {
+  const loadGoals = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -59,24 +55,28 @@ export default function GoalsPage() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error loading goals:', error)
-    } else {
-      setGoals(data || [])
+    if (!error && data) {
+      setGoals(data)
     }
-
     setLoading(false)
-  }
+  }, [supabase, router])
+
+  useEffect(() => {
+    loadGoals()
+  }, [loadGoals])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      setSaving(false)
+      return
+    }
 
     if (editingGoal) {
-      const { error } = await supabase
+      await supabase
         .from('goals')
         .update({
           title: formData.title,
@@ -85,13 +85,8 @@ export default function GoalsPage() {
           target_date: formData.target_date || null,
         })
         .eq('id', editingGoal.id)
-
-      if (error) {
-        console.error('Error updating goal:', error)
-        alert('Failed to update goal')
-      }
     } else {
-      const { error } = await supabase
+      await supabase
         .from('goals')
         .insert({
           user_id: user.id,
@@ -102,18 +97,23 @@ export default function GoalsPage() {
           status: 'active',
           progress: 0,
         })
-
-      if (error) {
-        console.error('Error creating goal:', error)
-        alert('Failed to create goal')
-      }
     }
 
     setSaving(false)
     setShowForm(false)
     setEditingGoal(null)
     setFormData({ title: '', description: '', category: 'health', target_date: '' })
-    loadGoals()
+    
+    // Force reload goals
+    setLoading(true)
+    const { data } = await supabase
+      .from('goals')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    
+    setGoals(data || [])
+    setLoading(false)
   }
 
   const handleEdit = (goal: Goal) => {
@@ -130,21 +130,19 @@ export default function GoalsPage() {
   const handleDelete = async (goalId: string) => {
     if (!confirm('Are you sure you want to delete this goal?')) return
 
-    const { error } = await supabase
-      .from('goals')
-      .delete()
-      .eq('id', goalId)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-    if (error) {
-      console.error('Error deleting goal:', error)
-      alert('Failed to delete goal')
-    } else {
-      loadGoals()
-    }
+    await supabase.from('goals').delete().eq('id', goalId)
+    
+    setGoals(goals.filter(g => g.id !== goalId))
   }
 
   const handleUpdateProgress = async (goalId: string, newProgress: number) => {
-    const { error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    await supabase
       .from('goals')
       .update({ 
         progress: newProgress,
@@ -152,27 +150,27 @@ export default function GoalsPage() {
       })
       .eq('id', goalId)
 
-    if (error) {
-      console.error('Error updating progress:', error)
-    } else {
-      loadGoals()
-    }
+    setGoals(goals.map(g => 
+      g.id === goalId 
+        ? { ...g, progress: newProgress, status: newProgress >= 100 ? 'completed' : 'active' }
+        : g
+    ))
   }
 
   const handleStatusChange = async (goalId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('goals')
-      .update({ 
-        status: newStatus,
-        progress: newStatus === 'completed' ? 100 : undefined
-      })
-      .eq('id', goalId)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-    if (error) {
-      console.error('Error updating status:', error)
-    } else {
-      loadGoals()
-    }
+    const updates: any = { status: newStatus }
+    if (newStatus === 'completed') updates.progress = 100
+
+    await supabase.from('goals').update(updates).eq('id', goalId)
+
+    setGoals(goals.map(g => 
+      g.id === goalId 
+        ? { ...g, ...updates }
+        : g
+    ))
   }
 
   const getCategoryStyle = (category: string) => {
@@ -307,18 +305,18 @@ export default function GoalsPage() {
                         <div className="mt-4">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm text-[#6b6b6b]">Progress</span>
-                            <span className="text-sm font-medium text-[#2d2d2d]">{goal.progress}%</span>
+                            <span className="text-sm font-medium text-[#2d2d2d]">{goal.progress || 0}%</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <div className="flex-1 bg-[#e8e4df] rounded-full h-2">
                               <div 
                                 className="bg-gradient-to-r from-[#5f7360] to-[#7a9a7c] h-2 rounded-full transition-all"
-                                style={{ width: `${goal.progress}%` }}
+                                style={{ width: `${goal.progress || 0}%` }}
                               />
                             </div>
                             <div className="flex items-center gap-1">
                               <button
-                                onClick={() => handleUpdateProgress(goal.id, Math.max(0, goal.progress - 10))}
+                                onClick={() => handleUpdateProgress(goal.id, Math.max(0, (goal.progress || 0) - 10))}
                                 className="p-1 text-[#6b6b6b] hover:bg-[#f8f6f3] rounded transition"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -326,7 +324,7 @@ export default function GoalsPage() {
                                 </svg>
                               </button>
                               <button
-                                onClick={() => handleUpdateProgress(goal.id, Math.min(100, goal.progress + 10))}
+                                onClick={() => handleUpdateProgress(goal.id, Math.min(100, (goal.progress || 0) + 10))}
                                 className="p-1 text-[#6b6b6b] hover:bg-[#f8f6f3] rounded transition"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -337,7 +335,7 @@ export default function GoalsPage() {
                           </div>
                         </div>
 
-                        {goal.progress >= 100 && (
+                        {(goal.progress || 0) >= 100 && (
                           <button
                             onClick={() => handleStatusChange(goal.id, 'completed')}
                             className="mt-4 w-full py-2 bg-[#e3e7e3] text-[#5f7360] rounded-xl font-medium hover:bg-[#d4dbd4] transition"
@@ -507,3 +505,4 @@ export default function GoalsPage() {
     </div>
   )
 }
+
